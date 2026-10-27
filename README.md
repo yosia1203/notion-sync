@@ -85,6 +85,10 @@ Three terms come up, and they are easy to mix up:
 
 You never download a token from Notion. You create it by signing in once, using the client secret. The secret is only needed for that sign-in.
 
+If OAuth sounds like it should need no secret: your sign-in in the browser needs none. The secret belongs to the connection (the app), not to you. After you approve, Notion hands the tool a one-time code, and the tool must prove it is the team's connection when it swaps that code for your token. That proof is the client secret.
+
+Nobody has to store it. Notion keeps it on the connection's page, and the tool never writes it to disk. You only copy it when you sign in, then forget it.
+
 ### Before you start
 
 You need:
