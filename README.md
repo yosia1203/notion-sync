@@ -343,7 +343,8 @@ A document can be synced only when it has a Notion page and says where it is.
    ```
 
    Frontmatter itself is never published. `published_url` is also what other documents' links resolve to.
-3. Start the body with a title heading (`#`), then the sections.
+3. Give the connection access to the page. In Notion, open the page, open its **⋯** menu, choose **Connections**, and add your team's connection. Without this the tool cannot see the page, and every command fails with a 404. You can do this only on pages you have full access to. If you selected the page on Notion's consent screen during sign-in, it is already done. Menu labels change from time to time, so look for **Connections** in the page's menu.
+4. Start the body with a title heading (`#`), then the sections.
 
 Frontmatter fields the script reads: `published_url`, and `imported: true` for prose that is someone else's wording. The script never writes frontmatter. To track when you last synced, record it yourself.
 
@@ -483,7 +484,7 @@ Refusals begin with `REFUSING:`. Read the message and fix the document or the pa
 |---|---|
 | No such file `notion_token.json` | Run the [setup](#set-up) steps. |
 | `invalid_grant` on `exchange` | The code was used or expired. Run `url` and approve again. |
-| A 404 or `object_not_found` from the API | Most likely the page was not shared with your authorization. Run `url` again and grant access to it. |
+| A 404 or `object_not_found` from the API | Most likely the connection was never added to the page. Add it under the page's **⋯** menu, **Connections** (see [Prepare a document](#prepare-a-document)), or run `url` again and select the page. |
 | `verify` fails on an unresolved link | The linked document has an empty `published_url`. Publish that page first, or remove the link. |
 | `verify` reports a manual section differs | Expected. The page owns it. Tell its owner what changed. |
 | `REFUSING: ambiguous ... heading` | Qualify the name with its parent: `"## Parent > ### Details"`. |

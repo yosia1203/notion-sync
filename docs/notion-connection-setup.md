@@ -67,7 +67,7 @@ Only the person who authorizes can use the pages they shared, and a person can s
 |---|---|
 | Notion refuses the sign-in link | The teammate's workspace is outside the connection's installation scope, or the redirect URI is not exactly `http://localhost`. |
 | `invalid_grant` on `exchange` | The one-time code was used or expired. Run `url` again. |
-| Authorized, but `manual` returns 404 | The page was not shared with the connection during sign-in. Sign in again and select it. |
+| Authorized, but `manual` returns 404 | The connection was not added to the page. Add it under the page's **⋯** menu, **Connections**, or sign in again and select the page. |
 | Teammate sees no pages to select | They need full access to the page in Notion first. |
 
 ## What the documentation does not say

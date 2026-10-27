@@ -35,7 +35,7 @@ Prove the connection works with a read-only command on a document that has a pag
 
 Work one region at a time. Do not batch a whole document into one write.
 
-1. **Preconditions.** Open the document. It must have `published_url` in its frontmatter. If not, stop: the page has to be created first (Notion import), and the user records its address. Do not create pages through the script.
+1. **Preconditions.** Open the document. It must have `published_url` in its frontmatter. If not, stop: the page has to be created first (Notion import), and the user records its address. Do not create pages through the script. The team's connection must also have been added to the page (the page's **⋯** menu, **Connections**). Notion hides a page from a connection that was never added, so a 404 almost always means this. Tell the user to add it; you cannot do it for them.
 2. **Inspect.** Run `verify <doc>` and `manual <doc>`. Both are read-only. Report which regions differ, which are manual, and which are blocked.
 3. **Settle the direction.** For an authored document the local file wins. For one marked `imported: true` the page wins: differences in wording are not to be overwritten. If the file and the page disagree on content and it is not obvious which is right, ask the user. Do not choose the newer one.
 4. **Plan.** For each region that differs, run `plan <doc> "<heading>"` and show the user what it would create and delete.
