@@ -12,8 +12,8 @@ whitespace is removed. If any other character differs the block is reported and 
 alone: the repo is not authoritative for prose, and a silent overwrite is how an
 author's wording disappears.
 
-Page properties are never written. That boundary is in CLAUDE.md, under
-*Notion properties have separate owners*, and it is enforced here rather than remembered.
+Page properties are never written. Reviewers own them, and the boundary is
+enforced here rather than remembered.
 """
 
 import json, os, re, sys, urllib.error, urllib.parse, urllib.request

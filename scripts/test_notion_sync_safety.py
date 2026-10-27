@@ -447,9 +447,8 @@ class SyncSafety(CommandCase):
         self.assertEqual(page.writes, [])
 
     def test_a_target_outside_the_notion_workflow_flattens_without_blocking(self):
-        """`knowledge/` and `performance/` carry no `published_url` field at all, because
-        CLAUDE.md keeps them out of the publishing workflow. A reference to one can never
-        acquire a page, so treating it as a missing destination would fail verification
+        """A document with no `published_url` field at all is one that is never published.
+        A reference to it can never acquire a page, so treating it as a missing destination would fail verification
         forever. It flattens to plain text instead."""
         finding = os.path.join(self.tmp.name, "finding.md")
         with open(finding, "w") as f:

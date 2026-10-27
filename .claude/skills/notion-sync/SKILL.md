@@ -5,7 +5,7 @@ description: Use when the user wants to set up the Notion sync, check that it is
 
 # Operate the Notion sync
 
-This skill runs the `notion-sync` scripts for the user. They keep a Notion page in step with a markdown document in git, one section at a time. The scripts live in a separate `notion-sync` checkout, not in the user's document repository.
+This skill runs the `notion-sync` scripts for the user. They sync specific local markdown files to their Notion pages, one way and one section at a time. The scripts live in a separate `notion-sync` checkout, not next to the user's documents. The documents need not be in a git repository.
 
 Publishing changes a page other people read and comment on. Treat each write as outward-facing: show what will change and get a clear yes first.
 
@@ -37,7 +37,7 @@ Work one region at a time. Do not batch a whole document into one write.
 
 1. **Preconditions.** Open the document. It must have `published_url` in its frontmatter. If not, stop: the page has to be created first (Notion import), and the user records its address. Do not create pages through the script.
 2. **Inspect.** Run `verify <doc>` and `manual <doc>`. Both are read-only. Report which regions differ, which are manual, and which are blocked.
-3. **Settle the direction.** For an authored document the repository wins. For one marked `imported: true` the page wins: differences in wording are not to be overwritten. If the repository and the page disagree on content and it is not obvious which is right, ask the user. Do not choose the newer one.
+3. **Settle the direction.** For an authored document the local file wins. For one marked `imported: true` the page wins: differences in wording are not to be overwritten. If the file and the page disagree on content and it is not obvious which is right, ask the user. Do not choose the newer one.
 4. **Plan.** For each region that differs, run `plan <doc> "<heading>"` and show the user what it would create and delete.
 5. **Apply.** After the user agrees, run `apply <doc> "<heading>"`. Do the regions one by one.
 6. **Verify.** Run `verify <doc>` again. A nonzero exit means the sync is not finished. Say so plainly.
@@ -51,7 +51,7 @@ Report the paths and regions you wrote, the `verify` result, and the page title 
 - **`--allow-comment-edit` deserves extra care.** A thread on a highlighted phrase leaves the page when its block is rewritten and cannot be read back. Say this before the user agrees.
 - **Do not write reviewer properties** (status, reviewers, review date and similar). The script does not, and you must not work around it through another tool.
 - **Do not edit frontmatter** except to record `published_url` when the user gives you the address.
-- **Do not rewrite imported prose.** Record rendering defects in the repository's own notes, not in the text.
+- **Do not rewrite imported prose.** Record rendering defects in the document's own notes, not in the text.
 - **Do not delete a section from a page** (`drop`) or insert one (`insert`) without showing the preview and getting a yes. Both preview first and need `--yes` to run.
 - **Do not delete or resolve comments.** The API cannot resolve them. The user does that in Notion.
 - **A refusal is information.** Messages start with `REFUSING:` or `WRITE OUTCOME UNKNOWN:`. Read them. After an unknown outcome, run `verify` before any retry.

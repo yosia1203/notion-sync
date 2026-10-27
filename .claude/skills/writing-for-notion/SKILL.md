@@ -1,13 +1,11 @@
 ---
 name: writing-for-notion
-description: Use when writing or revising a markdown document that will be published to a Notion page, when a published page has drifted from the repository, or when deciding what markdown a document may contain. Covers the three routes into Notion, the supported markdown, and the conventions that stand in for Notion blocks. To run the sync itself, use the notion-sync skill.
+description: Use when writing or revising a markdown document that will be published to a Notion page, when a published page has drifted from the local file, or when deciding what markdown a document may contain. Covers the three routes into Notion, the supported markdown, and the conventions that stand in for Notion blocks. To run the sync itself, use the notion-sync skill.
 ---
 
 # Writing for Notion
 
 Write RFCs, TSDs, proposals, and squad documents for Notion's block model. Before updating an existing page, read [references/publishing.md](references/publishing.md). That file owns the command sequence, authority rules, write guards, and recovery procedure. This skill owns the document conventions.
-
-Files under `performance/` and `knowledge/` are read here and are outside this publishing workflow.
 
 Notion is the delivery destination; the reader's task determines tone and detail. Keep any saved audience brief inside a local block.
 
@@ -19,7 +17,7 @@ Notion is the delivery destination; the reader's task determines tone and detail
 | `scripts/notion_publish.py` | maintain an existing page | replaces named regions through the API; finish with whole-document verification |
 | Paste | manual fallback | tables and fence languages have been lost; editor auto-indent can alter code |
 
-Import and paste do not run the script's local-content filter or link resolver. Prepare a copy with frontmatter, local blocks, and Obsidian comments removed before either route. Resolve repository links to published destinations. Never paste the source file wholesale.
+Import and paste do not run the script's local-content filter or link resolver. Prepare a copy with frontmatter, local blocks, and Obsidian comments removed before either route. Resolve links to other local documents to their published destinations. Never paste the source file wholesale.
 
 A document without a `published_url` cannot be maintained by the script. A linked target that carries the field and leaves it empty is also a sync blocker, even when its label is visible on the page: the target is waiting for a page, and pointing at it now publishes a dead reference.
 
@@ -42,7 +40,7 @@ A document without a `published_url` cannot be maintained by the script. A linke
 | image syntax | refuses; images need a manual section or a separate upload route |
 | footnotes and supported HTML tripwires | refuses authored prose; imported prose retains literal syntax with a warning |
 
-The converter is a repository-specific Markdown subset. Matching its output does not prove arbitrary Markdown semantics. Do not assume an untested extension works. Unsupported page content must stay manual rather than being removed to obtain a green result.
+The converter is a purpose-built Markdown subset. Matching its output does not prove arbitrary Markdown semantics. Do not assume an untested extension works. Unsupported page content must stay manual rather than being removed to obtain a green result.
 
 Code languages map explicitly: `yaml`, `json`, `go`, `bash`, `shell`, `text`, `plain text`, `mermaid`, `makefile`, `diff`, `markdown`, and `javascript`. An untagged fence means plain text. Unknown tags refuse instead of silently losing highlighting. Longer backtick fences can contain shorter fence examples; every fence must close. Start every fence in column one. The converter cannot nest a code block inside a list item, and an indented fence reaches the page as literal backticks, so it refuses one in authored prose and warns on imported prose. Unindent the fence, or give the section to the page as manual content.
 
@@ -71,8 +69,8 @@ Keep the filing number out of the document title. A page title property and the 
 
 | Marker | Meaning |
 |---|---|
-| `<!-- local:start -->` through `<!-- local:end -->` | repository-only content, removed before every script comparison/write |
-| `%%comment%%` | repository-only Obsidian comment, also removed |
+| `<!-- local:start -->` through `<!-- local:end -->` | local-only content, removed before every script comparison/write |
+| `%%comment%%` | local-only Obsidian comment, also removed |
 | `## Heading <!-- manual -->` | page-owned section and descendants; reported for drift, never written by apply/insert |
 | `## Heading <!-- toggle -->` | a toggle heading with its section nested inside, up to the next heading at the same or a higher level; written by the script, including when nested inside another section. Content more than two levels deep refuses |
 | `<!-- toggle-block: title -->` ... `<!-- toggle-block:end -->` | a plain toggle block, not a heading; written and compared by the script like any other content |
@@ -89,9 +87,9 @@ Imported prose remains its authors' wording. The imported converter exemption is
 
 ## Keep links and diagrams usable
 
-Write cross-document links as relative repository paths whose targets carry a real `published_url`. The script resolves them for the page. An in-page Markdown anchor needs a Notion destination; do not rely on a repository heading slug working there.
+Write cross-document links as relative file paths whose targets carry a real `published_url`. The script resolves them for the page. An in-page Markdown anchor needs a Notion destination; do not rely on a heading slug from the local file working there.
 
-A link into `knowledge/` or `performance/` is different. Those domains are outside this workflow and their frontmatter has no `published_url` field at all, so no page will ever exist to point at. The script flattens such a link to plain text and does not report it, which keeps the repository path working for a reader here without failing verification forever. Name the finding in the sentence, so the page still says what the reader is being sent to.
+A link to a document whose frontmatter has no `published_url` field at all is different. Leaving the field out marks a document that will never have a page, so nothing exists to point at. The script flattens such a link to plain text and does not report it, which keeps the file path working for a reader of the source without failing verification forever. Name the finding in the sentence, so the page still says what the reader is being sent to.
 
 Every sequence, state machine, decision path, or pipeline belongs in a fenced `mermaid` block. ASCII flows stay code. Quote punctuation in diagram labels, choose one direction, avoid hard-coded styling, and split a diagram when it becomes difficult to read in a page column.
 

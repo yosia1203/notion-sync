@@ -125,8 +125,8 @@ def published_url_of(rel):
     Two different absences hide behind a missing URL. A target that carries the field
     and leaves it empty is waiting for its page, and pointing at it now would publish a
     dead reference: that is the blocker this guard exists for. A target with no such
-    field belongs to a domain this workflow never publishes, `knowledge/` or
-    `performance/`, so no page will ever exist to point at. Reporting that one would
+    field is a document that will never be published, so no page will ever exist
+    to point at. Reporting that one would
     fail verification permanently and teach the next person to ignore the result, so
     the link flattens to plain text and the document can still pass."""
     target = os.path.normpath(os.path.join(BASE_DIR, rel.split("#")[0]))
@@ -240,8 +240,8 @@ IMPORTED = False        # set from the document's frontmatter before anything co
 
 def literal(l, what, fix):
     """A construct that reaches the page as literal characters. Refuse it in prose we
-    author. In imported prose it is the authors' text, which CLAUDE.md forbids
-    correcting, so publish it as it stands and say so: the defect belongs in that
+    author. In imported prose it is the authors' text, which this tool must not
+    correct, so publish it as it stands and say so: the defect belongs in that
     document's Import notes, not in an edit."""
     if IMPORTED:
         print(f"  LITERAL ON THE PAGE: {l.strip()[:60]!r} ({what}). Imported prose, "
@@ -410,8 +410,8 @@ def convert(md_lines):
                     and not re.match(r"^\s*([-*]|\d+\.)\s", md_lines[i]):
                 text += " " + md_lines[i].strip(); i += 1
             append_list(para(kind, text), len(indent)); continue
-        # These parse as a paragraph and reach the page as literal characters. CLAUDE.md
-        # forbids all three already; refusing here is what makes the rule mechanical
+        # These parse as a paragraph and reach the page as literal characters. Authored
+        # prose should never contain them; refusing here is what makes the rule mechanical
         # rather than something the page tells you about afterwards.
         if re.match(r"^#{5,} ", l):
             literal(l, "is a fifth-level or deeper heading, which Notion does not support",

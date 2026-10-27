@@ -1,8 +1,12 @@
 # notion-sync
 
-Keep a Notion page in step with a markdown document in git, one section at a time.
+Sync specific markdown files on your machine to their Notion pages, one section at a time.
 
-You write and review the document in your repository. This tool pushes the text to the Notion page that already exists for it, and leaves everything on that page that is not yours alone: comment threads, reviewer properties, and sections people edit by hand.
+You pick a file, and the file's frontmatter names the page it belongs to. When you run a command, the page is updated to match the file. Nothing runs in the background. The files can be anywhere on your machine: no git repository is needed, though keeping them in one gives you history.
+
+The sync goes one way: the local file is the source and Notion is the destination. Edits made on the page are never pulled back into the file. They are reported as differences, and you decide which side is right.
+
+It writes only the text of the page. It leaves everything else on the page alone: comment threads, reviewer properties, and sections people edit by hand.
 
 It is plain Python 3 with nothing to install, plus two Claude Code skills so Claude can set it up, write documents for it, and run it for you.
 
@@ -23,7 +27,7 @@ It is plain Python 3 with nothing to install, plus two Claude Code skills so Cla
   - [Quick reference](#quick-reference)
   - [Callouts](#callouts)
   - [Toggles](#toggles)
-  - [Repository-only content](#repository-only-content)
+  - [Local-only content](#local-only-content)
   - [Page-owned sections](#page-owned-sections)
   - [Links between documents](#links-between-documents)
   - [Diagrams and code](#diagrams-and-code)
@@ -41,7 +45,7 @@ It is plain Python 3 with nothing to install, plus two Claude Code skills so Cla
 
 ## How it works
 
-Your git repository owns the text. Notion owns everything around it.
+Your local file owns the text. Notion owns everything around it.
 
 ```mermaid
 flowchart LR
@@ -57,7 +61,7 @@ flowchart LR
 The steps, in order:
 
 1. **Read and clean.** The script reads the markdown and removes what must never publish: the YAML frontmatter, anything between `<!-- local:start -->` and `<!-- local:end -->`, and `%%Obsidian comments%%`.
-2. **Resolve links.** A link to another repository document becomes a link to that document's Notion page, using the target's own `published_url`. A link whose target is still waiting for a page is reported as a blocker rather than published dead.
+2. **Resolve links.** A link to another local document becomes a link to that document's Notion page, using the target's own `published_url`. A link whose target is still waiting for a page is reported as a blocker rather than published dead.
 3. **Split into regions.** Each heading and the prose under it is a region you can address by name, such as `"## Risks"`, or `"## Parent > ### Details"` when a name repeats.
 4. **Convert.** Only a fixed subset of markdown is understood (see [conventions](#notion-conventions-in-plain-markdown)). Anything else stops the run instead of being dropped silently.
 5. **Diff against the live page.** The script reads the page's blocks and matches them to the converted ones the way a text diff matches lines. An identical block is left alone. A reworded block of the same type is rewritten in place through its own ID. Only blocks with no match are created or deleted.
@@ -75,14 +79,14 @@ Do this once per person. It takes about ten minutes.
 You need:
 
 - **Python 3.9 or newer.** Check with `python3 --version`. There is nothing to `pip install`.
-- **git.**
+- **git**, to clone this tool and pull updates. Your own documents do not need to be in git.
 - **A Notion account in the workspace** that holds the pages you will publish to, with permission to edit them.
 - **The client secret**, from whoever runs this tool for the team. It lives in the team password manager. It is the only shared secret, and you will paste it into your own terminal once.
 - **Claude Code**, if you want Claude to run the sync for you. The scripts work without it.
 
 ### 1. Get the tool
 
-Clone this repository somewhere permanent. Your documents live in other repositories; this checkout holds only the tool.
+Clone this repository somewhere permanent. Your documents live wherever you keep them; this checkout holds only the tool.
 
 ```bash
 git clone https://github.com/yosia1203/notion-sync.git ~/dev/notion-sync
@@ -111,7 +115,7 @@ python3 scripts/notion_auth.py exchange '<the address you copied>'
 
 Paste the client secret when prompted. Nothing is echoed. (Or set `NOTION_CLIENT_SECRET` in that shell first.)
 
-The token is saved to `~/.config/notion-sync/notion_token.json`. Only you can read it and it sits outside every repository. The scripts never print it.
+The token is saved to `~/.config/notion-sync/notion_token.json`. Only you can read it and it sits outside any project folder. The scripts never print it.
 
 An authorization code is single-use and short-lived. If `exchange` fails with `invalid_grant`, run `url` again and approve again.
 
@@ -173,7 +177,7 @@ rm ~/.config/notion-sync/notion_token.json
 
 ### Why conventions
 
-Notion has blocks that markdown cannot express: callouts, toggles, sections that people edit by hand, and text that should stay in the repository. Standard markdown has no syntax for them.
+Notion has blocks that markdown cannot express: callouts, toggles, sections that people edit by hand, and text that should stay on your machine. Standard markdown has no syntax for them.
 
 So the tool reads a small set of conventions. Every one is chosen to degrade gracefully: in GitHub, Obsidian or any plain viewer the file still reads as ordinary markdown. HTML comments are invisible there, and a callout is a normal blockquote. Only this tool gives them their Notion meaning.
 
@@ -223,7 +227,7 @@ The body of the example goes here.
 
 Limits: a toggle block cannot sit inside another toggle block, cannot contain a heading, and must be closed. A toggle heading nests only two levels deep. The page's main path should still read properly with every toggle closed.
 
-### Repository-only content
+### Local-only content
 
 Anything between these markers is removed before every comparison and write. Use it for review notes, the audience you wrote for, or drafting scaffolding.
 
@@ -249,7 +253,7 @@ Three screenshots of the load test, added in Notion by hand.
 <!-- local:end -->
 ```
 
-The script then owns nothing in that section or its subsections. `verify` reports when the page and the repository differ there, and `apply` never writes it. Describe the intended content inside a local block, as above, so a reader of the repository knows what lives on the page.
+The script then owns nothing in that section or its subsections. `verify` reports when the page and the local file differ there, and `apply` never writes it. Describe the intended content inside a local block, as above, so a reader of the file knows what lives on the page.
 
 ### Links between documents
 
@@ -430,7 +434,7 @@ The heading `@preamble` selects the prose between the title and the first sectio
 
 Resolving a comment thread is not on the list because Notion's API cannot do it. `comments` shows only open threads; resolving one in Notion removes it from the list.
 
-`scripts/notion_sync.py check|apply <doc>` is a narrower tool. It finds code blocks on the page whose whitespace was damaged by pasting and restores them from the repository. It touches nothing else and pairs a block with a fence only when the two match once whitespace is ignored.
+`scripts/notion_sync.py check|apply <doc>` is a narrower tool. It finds code blocks on the page whose whitespace was damaged by pasting and restores them from the local file. It touches nothing else and pairs a block with a fence only when the two match once whitespace is ignored.
 
 ## Safety guards
 

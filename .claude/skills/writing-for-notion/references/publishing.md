@@ -1,10 +1,10 @@
 # Publishing to Notion
 
-This procedure maintains existing Notion pages from repository documents. Read the authority rules first, inspect the full document, then publish only the regions whose differences have been settled. The script provides section replacement, not an atomic whole-page transaction.
+This procedure maintains existing Notion pages from local markdown documents. Read the authority rules first, inspect the full document, then publish only the regions whose differences have been settled. The script provides section replacement, not an atomic whole-page transaction.
 
 ## Decide which content may change
 
-An authored document owns its publishable body. An imported document, marked `imported: true`, preserves its authors' prose: wording differences resolve toward the page. A later repository decision can publish outward only when the owner has settled that exception. The converter's imported flag permits literal unsupported syntax; it does not establish authority to overwrite imported prose.
+An authored document owns its publishable body. An imported document, marked `imported: true`, preserves its authors' prose: wording differences resolve toward the page. A later decision can publish outward only when the owner has settled that exception. The converter's imported flag permits literal unsupported syntax; it does not establish authority to overwrite imported prose.
 
 Local blocks and Obsidian comments never publish. A heading marked `<!-- manual -->` gives the page ownership of that section and its descendants. Verification reports those differences separately. A nested page or database is another document and remains outside the replacement.
 
@@ -16,7 +16,7 @@ The page title is the one property this workflow owns and the one the script can
 
 1. Rename the document here: the frontmatter `title`, the body title heading, and the filename if the slug changed. Keep the filing code out of both titles.
 2. Publish the body title with `apply <doc> @preamble`, which carries the heading, or with `apply <doc> "<title heading>"` where the title is its own region.
-3. Open the page and edit the title property to the same words. Nothing in this repository can do that step.
+3. Open the page and edit the title property to the same words. Nothing in this tool can do that step.
 4. Report the title separately from the `verify` result, naming the old and new titles, because no command will show that it happened.
 
 ## Check the connection and run the tests
@@ -52,13 +52,13 @@ python3 scripts/notion_publish.py manual documentation/rfc/006-api-validation.md
 
 A nonzero result means incomplete synchronization or a blocker. A zero result means the managed body matches the converter's supported representation. Manual sections and preserved child pages/databases are reported separately. Page properties, the page title property, comments, and edits made during the report are outside that result.
 
-`verify <doc> --with-comments` also lists the page's open threads and names each one waiting on you. A page can match the repository while a reviewer still waits for an answer, so a sync that closes a review round runs this form. The threads never change the exit code. The flag adds the full comment scan described below, about four minutes on a 195-block page.
+`verify <doc> --with-comments` also lists the page's open threads and names each one waiting on you. A page can match the local file while a reviewer still waits for an answer, so a sync that closes a review round runs this form. The threads never change the exit code. The flag adds the full comment scan described below, about four minutes on a 195-block page.
 
 `manual` lists every region as matching, differing, missing, manual, or blocked. It is a read-only classification. Apply still needs to check comment access and removed links. `coverage` is an additional heading/preamble diagnostic, not a completion check.
 
 A heading-order failure needs a separate repair. Applying a matching section does not move it. Inspect the exact sections involved and preserve comments, manual content, and nested documents when correcting their order; the command line has no general reorder operation.
 
-An unresolved repository link is a failure even when its label matches plain text on the page. Establish the target's real `published_url` before calling the document synced. A link into `knowledge/` or `performance/` is not one of these: those domains carry no `published_url` field, so the link flattens to plain text and is not reported.
+An unresolved cross-document link is a failure even when its label matches plain text on the page. Establish the target's real `published_url` before calling the document synced. A link to a document with no `published_url` field at all is not one of these: leaving the field out marks a document that will never have a page, so the link flattens to plain text and is not reported.
 
 ## Read and answer the page's comments
 
@@ -76,7 +76,7 @@ The scan is slow and cannot be made fast. Notion answers comments for one block 
 
 `reply` posts into an existing discussion. Without `--yes` it prints the thread and the answer and sends nothing. It checks that the discussion belongs to this document's page before posting, because a discussion id from another document is still a valid id, and posting to the wrong one puts your words under someone else's work. Both comment capabilities, read and insert, are off by default on a connection, and a call without them returns 403 rather than a validation error.
 
-**Resolving a thread is not available**, and neither is starting one anchored to a phrase. Notion's comment guide states both: a connection cannot resolve comments, cannot retrieve resolved ones, and cannot anchor a new discussion to a selected range of text inside a block. The reference adds that a comment may be created on a whole page or a whole block, which this repository has not tried; `reply` only answers a discussion that already exists. Resolving stays a hand action in Notion.
+**Resolving a thread is not available**, and neither is starting one anchored to a phrase. Notion's comment guide states both: a connection cannot resolve comments, cannot retrieve resolved ones, and cannot anchor a new discussion to a selected range of text inside a block. The reference adds that a comment may be created on a whole page or a whole block, which this tool has not tried; `reply` only answers a discussion that already exists. Resolving stays a hand action in Notion.
 
 | Operation | Available | Where it is used here |
 |---|---|---|
@@ -117,7 +117,7 @@ python3 scripts/notion_publish.py plan document.md "## Parent > ### Details"
 python3 scripts/notion_publish.py apply document.md "## Parent > ### Details"
 ```
 
-The selector must identify one repository heading and one page heading. An ambiguous bare name refuses. An existing toggle's content is written inside its heading, and a heading marked `<!-- toggle -->` inside a section is written as a toggle heading with its own section nested in it. Changing an existing heading between toggle and plain, or changing its depth, still refuses; repair the container on the page first. `insert` can create a new toggle section. Content nested more than two levels below a block refuses before any write, because Notion accepts two levels per request.
+The selector must identify one heading in the local file and one page heading. An ambiguous bare name refuses. An existing toggle's content is written inside its heading, and a heading marked `<!-- toggle -->` inside a section is written as a toggle heading with its own section nested in it. Changing an existing heading between toggle and plain, or changing its depth, still refuses; repair the container on the page first. `insert` can create a new toggle section. Content nested more than two levels below a block refuses before any write, because Notion accepts two levels per request.
 
 Plan prints the text diff and blockers without writing. Apply compares structured content. Unsupported nested structures, captions, mentions, and colours require a deliberate manual decision. Underline is converted from `==text==` and compared like any other annotation.
 
@@ -144,7 +144,7 @@ The write order keeps the old content on the page for as long as possible: creat
 |---|---|
 | `insert <doc> "<heading>" "<before>"` | preview a missing section before an existing heading |
 | `insert ... --yes` | create the missing section after passing the write guards |
-| `drop <doc> "<heading>"` | preview removal of a section absent from the publishable repository body |
+| `drop <doc> "<heading>"` | preview removal of a section absent from the publishable local body |
 | `drop ... --yes` | remove that section after checking links, comments, and nested content |
 
 `apply <doc> @preamble` can create a missing introduction at the start of the page, including when there is no body-title block. That request uses Notion API version `2026-03-11` with `position: {"type": "start"}`. Other requests retain the existing API version. The separate `insert` command still requires a preceding block; a missing section before every existing block needs a page repair.
@@ -162,7 +162,7 @@ These flags do not make verification pass or transfer ownership of manual conten
 
 ## Known Notion limitations
 
-These come from Notion's API, not from this repository's tooling. Each one is a boundary the procedure works around rather than a defect to fix here.
+These come from Notion's API, not from this tool. Each one is a boundary the procedure works around rather than a defect to fix here.
 
 | Limitation | What it means here |
 |---|---|
@@ -184,7 +184,7 @@ These come from Notion's API, not from this repository's tooling. Each one is a 
 Manual sections are the part of a page no command writes, so a sync that ends at `verify` leaves them to memory. After the final `verify` of every sync, before reporting the sync as done:
 
 1. List each region that `verify` reports under `MANUAL (page-owned)`, and each local block inside those sections that is meant for manual entry, such as drafted rows for a Notion database.
-2. For each one, state what changed in the repository since the page was last synced, from the repository history since `last_synced` and any uncommitted changes. Say plainly when nothing changed.
+2. For each one, state what changed in the document since the page was last synced, using `last_synced`, git history if the file is in git, and any unsaved changes you know of. Say plainly when nothing changed.
 3. Ask the user whether they have updated those parts of the page, and wait for the answer.
 4. Report the answer for each part: updated, not yet updated, or no update needed. Record `last_synced` for the automated sections as usual, and state the manual status separately. Never describe a page as fully synced while a manual part is unconfirmed.
 
