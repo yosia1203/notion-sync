@@ -16,11 +16,12 @@ It is plain Python 3 with nothing to install, plus two Claude Code skills so Cla
 - [Set up](#set-up)
   - [Before you start](#before-you-start)
   - [1. Get the tool](#1-get-the-tool)
-  - [2. Get the client secret](#2-get-the-client-secret)
-  - [3. Authorize your Notion account](#3-authorize-your-notion-account)
+  - [2. Get the client secret from your admin](#2-get-the-client-secret-from-your-admin)
+  - [3. Sign in to Notion and create your token](#3-sign-in-to-notion-and-create-your-token)
   - [4. Check the install](#4-check-the-install)
   - [5. Try it on a real page](#5-try-it-on-a-real-page)
   - [6. Install the Claude Code skills](#6-install-the-claude-code-skills)
+  - [For the admin: where the secret comes from](#for-the-admin-where-the-secret-comes-from)
   - [Update or sign out](#update-or-sign-out)
 - [Notion conventions in plain markdown](#notion-conventions-in-plain-markdown)
   - [Why conventions](#why-conventions)
@@ -74,6 +75,16 @@ Run it a second time with no changes and nothing is written.
 
 Do this once per person. It takes about ten minutes.
 
+Three terms come up, and they are easy to mix up:
+
+| Term | What it is | Who has it | Where it comes from |
+|---|---|---|---|
+| Client ID | The public name of the Notion connection this tool signs in through. | Built into `scripts/notion_auth.py`. | Nothing to do. |
+| Client secret | The connection's password. It proves the sign-in comes from your team's connection. | Shared by the team. | Your admin gives it to you. They copy it from the connection's page in Notion. |
+| Token | Your personal key to Notion. The scripts use it to edit pages as you. | You alone. Stored on your machine. | Created for you when you finish signing in (step 3). |
+
+You never download a token from Notion. You create it by signing in once, using the client secret. The secret is only needed for that sign-in.
+
 ### Before you start
 
 You need:
@@ -81,7 +92,7 @@ You need:
 - **Python 3.9 or newer.** Check with `python3 --version`. There is nothing to `pip install`.
 - **git**, to clone this tool and pull updates. Your own documents do not need to be in git.
 - **A Notion account in the workspace** that holds the pages you will publish to, with permission to edit them.
-- **The client secret**, from whoever runs this tool for the team. It lives in the team password manager. It is the only shared secret, and you will paste it into your own terminal once.
+- **The client secret**, from whoever runs this tool for the team (see [step 2](#2-get-the-client-secret-from-your-admin)). It is the only shared secret, and you will paste it into your own terminal once.
 - **Claude Code**, if you want Claude to run the sync for you. The scripts work without it.
 
 ### 1. Get the tool
@@ -92,20 +103,24 @@ Clone this repository somewhere permanent. Your documents live wherever you keep
 git clone https://github.com/yosia1203/notion-sync.git ~/dev/notion-sync
 ```
 
-### 2. Get the client secret
+### 2. Get the client secret from your admin
 
-Copy it from the password manager. Do not save it in a file, commit it, or paste it into chat or into Claude. The tool never writes it to disk.
+Ask whoever set up this tool for your team. Your admin is the person who owns the Notion connection. They should send it through the team password manager, or another way they trust for passwords.
 
-### 3. Authorize your Notion account
+Keep it for the next step only. Do not save it in a file, commit it, or paste it into chat or into Claude. The tool never writes it to disk.
 
-This gives the tool a token that belongs to you, so page history shows your name against your edits.
+If you are the admin, see [where the secret comes from](#for-the-admin-where-the-secret-comes-from).
+
+### 3. Sign in to Notion and create your token
+
+This signs you in through your team's connection and gives the tool a token that belongs to you, so page history shows your name against your edits.
 
 ```bash
 cd ~/dev/notion-sync
 python3 scripts/notion_auth.py url
 ```
 
-Open the printed link in your browser, approve, and grant access to the pages or database you will publish to.
+Open the printed link in your browser. Notion asks you to approve the connection and to choose which pages it may access. Select the pages or database you will publish to, then approve.
 
 The browser then fails to load a page at `http://localhost/?code=...`. That is expected: the authorization code is in the address bar. Copy the whole address and run:
 
@@ -115,7 +130,7 @@ python3 scripts/notion_auth.py exchange '<the address you copied>'
 
 Paste the client secret when prompted. Nothing is echoed. (Or set `NOTION_CLIENT_SECRET` in that shell first.)
 
-The token is saved to `~/.config/notion-sync/notion_token.json`. Only you can read it and it sits outside any project folder. The scripts never print it.
+When it works you see `Token stored at ~/.config/notion-sync/notion_token.json` and the name of your workspace. Only you can read that file, and it sits outside any project folder. The scripts never print the token. Treat it like a password: do not share it or commit it.
 
 An authorization code is single-use and short-lived. If `exchange` fails with `invalid_grant`, run `url` again and approve again.
 
@@ -158,6 +173,19 @@ ln -s ~/dev/notion-sync/.claude/skills/writing-for-notion ~/.claude/skills/writi
 ```
 
 Start a new Claude Code session. Ask "what skills do you have for Notion?" and both should appear. [Work with Claude Code](#work-with-claude-code) says what each does.
+
+### For the admin: where the secret comes from
+
+Do this once for the team. Teammates never need to see Notion's connection settings.
+
+1. In Notion, open **Settings**, then **Connections**, and choose the option to develop or manage integrations. It opens your integrations page, at `notion.so/profile/integrations`. Menu labels change from time to time, so look for the page that lists your connections.
+2. Open the connection this tool uses. Its settings show an **OAuth client ID** and an **OAuth client secret**. Copy the secret.
+3. Check that the client ID matches `CLIENT_ID` in `scripts/notion_auth.py`. If you create a new connection, put its client ID there and push the change.
+4. Check that the connection's redirect URI is exactly `http://localhost`. The sign-in uses it, and Notion rejects the sign-in if it is missing.
+5. Store the secret in your team password manager and share it with each teammate individually. Do not put it in the repository, in chat, or in a ticket.
+6. Check that your teammates are allowed to authorize the connection. The scripts cannot see these Notion settings. Test with one teammate before you announce it.
+
+If the secret leaks, generate a new one on the same page and tell the team.
 
 ### Update or sign out
 
