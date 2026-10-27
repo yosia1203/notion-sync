@@ -394,7 +394,7 @@ class SyncSafety(CommandCase):
         self.assertEqual(np.convert(["# Introduction"])[0]["type"], "heading_1")
 
     def test_timeout_does_not_retry_append(self):
-        with patch("builtins.open", unittest.mock.mock_open(read_data='{"access_token":"test"}')), \
+        with patch.object(np.Path, "read_text", return_value='{"access_token":"test"}'), \
                 patch.object(np.urllib.request, "urlopen", side_effect=TimeoutError("lost reply")) as request, \
                 patch.object(np.time, "sleep"):
             with self.assertRaises(SystemExit):
