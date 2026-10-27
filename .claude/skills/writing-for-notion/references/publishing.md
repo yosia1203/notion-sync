@@ -21,7 +21,7 @@ The page title is the one property this workflow owns and the one the script can
 
 ## Check the connection and run the tests
 
-The scripts live in the notion-sync checkout, so run `scripts/...` commands from that directory or give the full path to the script. The document argument can be any path. The token is stored at `~/.config/compendium/notion_token.json`. If it is missing, run:
+The scripts live in the notion-sync checkout, so run `scripts/...` commands from that directory or give the full path to the script. The document argument can be any path. The token is stored at `~/.config/notion-sync/notion_token.json`. If it is missing, run:
 
 ```bash
 python3 scripts/notion_auth.py url

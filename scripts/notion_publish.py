@@ -46,7 +46,7 @@ import copy, difflib, json, os, re, sys, time, urllib.error, urllib.parse, urlli
 from pathlib import Path
 from functools import wraps
 
-TOKEN = os.path.expanduser("~/.config/compendium/notion_token.json")
+TOKEN = os.path.expanduser("~/.config/notion-sync/notion_token.json")
 VERSION = "2022-06-28"
 LIMIT = 2000
 LANGUAGES = {"yaml": "yaml", "json": "json", "go": "go", "bash": "bash",
@@ -73,7 +73,7 @@ def api(path, method="GET", body=None, soft=False):
             headers={"Authorization": f"Bearer {tok}",
                      "Notion-Version": api_version(path, body),
                      "Content-Type": "application/json",
-                     "User-Agent": "compendium-notion-sync/1.0"})
+                     "User-Agent": "notion-sync/1.0"})
         try:
             with urllib.request.urlopen(req, timeout=45) as r:
                 return json.load(r)

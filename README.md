@@ -111,7 +111,7 @@ python3 scripts/notion_auth.py exchange '<the address you copied>'
 
 Paste the client secret when prompted. Nothing is echoed. (Or set `NOTION_CLIENT_SECRET` in that shell first.)
 
-The token is saved to `~/.config/compendium/notion_token.json`. Only you can read it and it sits outside every repository. The scripts never print it. The folder name is a leftover from where the tool started; it does not matter.
+The token is saved to `~/.config/notion-sync/notion_token.json`. Only you can read it and it sits outside every repository. The scripts never print it.
 
 An authorization code is single-use and short-lived. If `exchange` fails with `invalid_grant`, run `url` again and approve again.
 
@@ -166,7 +166,7 @@ cd ~/dev/notion-sync && git pull
 To sign out, delete the token. Run `notion_auth.py url` and `exchange` again to sign back in.
 
 ```bash
-rm ~/.config/compendium/notion_token.json
+rm ~/.config/notion-sync/notion_token.json
 ```
 
 ## Notion conventions in plain markdown

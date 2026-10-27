@@ -27,7 +27,7 @@ import urllib.request
 
 CLIENT_ID = "3d5d872b-594c-815c-a19e-0037c12e8124"
 REDIRECT_URI = "http://localhost"
-TOKEN_PATH = os.path.expanduser("~/.config/compendium/notion_token.json")
+TOKEN_PATH = os.path.expanduser("~/.config/notion-sync/notion_token.json")
 AUTHORIZE = "https://api.notion.com/v1/oauth/authorize"
 TOKEN_URL = "https://api.notion.com/v1/oauth/token"
 

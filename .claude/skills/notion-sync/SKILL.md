@@ -19,9 +19,9 @@ The checkout's `README.md` is the full reference. Read it when a command or erro
 
 ## Check the connection
 
-The token is `~/.config/compendium/notion_token.json`.
+The token is `~/.config/notion-sync/notion_token.json`.
 
-- Check that it exists with `test -f ~/.config/compendium/notion_token.json`. Never print, read aloud, or copy the file's contents.
+- Check that it exists with `test -f ~/.config/notion-sync/notion_token.json`. Never print, read aloud, or copy the file's contents.
 - If it is missing, walk the user through setup. They run the commands, because the client secret must never pass through this conversation:
   1. `python3 <checkout>/scripts/notion_auth.py url`: they open the printed link, approve, and grant access to the pages they will publish to.
   2. The browser then fails to load `http://localhost/?code=...`. That is expected. They copy the whole address.

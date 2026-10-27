@@ -19,7 +19,7 @@ Page properties are never written. That boundary is in CLAUDE.md, under
 import json, os, re, sys, urllib.error, urllib.parse, urllib.request
 from notion_publish import body_of, fence_open, fence_close
 
-TOKEN_PATH = os.path.expanduser("~/.config/compendium/notion_token.json")
+TOKEN_PATH = os.path.expanduser("~/.config/notion-sync/notion_token.json")
 NOTION_VERSION = "2022-06-28"
 RICH_TEXT_LIMIT = 2000
 
@@ -37,7 +37,7 @@ def api(path, method="GET", body=None):
         headers={"Authorization": f"Bearer {token()}",
                  "Notion-Version": NOTION_VERSION,
                  "Content-Type": "application/json",
-                 "User-Agent": "compendium-notion-sync/1.0"})
+                 "User-Agent": "notion-sync/1.0"})
     try:
         with urllib.request.urlopen(req) as r:
             return json.load(r)
