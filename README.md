@@ -16,12 +16,11 @@ It is plain Python 3 with nothing to install, plus two Claude Code skills so Cla
 - [Set up](#set-up)
   - [Before you start](#before-you-start)
   - [1. Get the tool](#1-get-the-tool)
-  - [2. Get the client secret from your admin](#2-get-the-client-secret-from-your-admin)
+  - [2. Create your own Notion connection](#2-create-your-own-notion-connection)
   - [3. Sign in to Notion and create your token](#3-sign-in-to-notion-and-create-your-token)
   - [4. Check the install](#4-check-the-install)
   - [5. Try it on a real page](#5-try-it-on-a-real-page)
   - [6. Install the Claude Code skills](#6-install-the-claude-code-skills)
-  - [For the admin: where the secret comes from](#for-the-admin-where-the-secret-comes-from)
   - [Update or sign out](#update-or-sign-out)
 - [Notion conventions in plain markdown](#notion-conventions-in-plain-markdown)
   - [Why conventions](#why-conventions)
@@ -75,19 +74,17 @@ Run it a second time with no changes and nothing is written.
 
 Do this once per person. It takes about ten minutes.
 
-Three terms come up, and they are easy to mix up:
+Everyone signs in through a Notion connection of their own, so nothing secret is shared between people. Three terms come up, and they are easy to mix up:
 
-| Term | What it is | Who has it | Where it comes from |
-|---|---|---|---|
-| Client ID | The public name of the Notion connection this tool signs in through. | Built into `scripts/notion_auth.py`. | Nothing to do. |
-| Client secret | The connection's password. It proves the sign-in comes from your team's connection. | Shared by the team. | Your admin gives it to you. They copy it from the connection's page in Notion. |
-| Token | Your personal key to Notion. The scripts use it to edit pages as you. | You alone. Stored on your machine. | Created for you when you finish signing in (step 3). |
+| Term | What it is | Where it lives |
+|---|---|---|
+| Client ID | The public name of your connection. Not a secret. | Your shell profile, as `NOTION_CLIENT_ID`. |
+| Client secret | Your connection's password. Only you have it. | Your password manager. Typed once at a prompt. |
+| Token | Your personal key to Notion. The scripts use it to edit pages as you. | `~/.config/notion-sync/notion_token.json`, written by the tool when you sign in. |
 
-You never download a token from Notion. You create it by signing in once, using the client secret. The secret is only needed for that sign-in.
+You create the connection yourself (step 2) and it gives you the client ID and the client secret. You never download a token from Notion. You create it by signing in once.
 
-If OAuth sounds like it should need no secret: your sign-in in the browser needs none. The secret belongs to the connection (the app), not to you. After you approve, Notion hands the tool a one-time code, and the tool must prove it is the team's connection when it swaps that code for your token. That proof is the client secret.
-
-Nobody has to store it. Notion keeps it on the connection's page, and the tool never writes it to disk. You only copy it when you sign in, then forget it.
+If OAuth sounds like it should need no secret: your sign-in in the browser needs none. The secret belongs to the connection (the app), not to you. After you approve, Notion hands the tool a one-time code, and the tool must prove it is your connection when it swaps that code for your token. That proof is the client secret. The tool never writes it to disk, and you need it only when you sign in.
 
 ### Before you start
 
@@ -96,7 +93,7 @@ You need:
 - **Python 3.9 or newer.** Check with `python3 --version`. There is nothing to `pip install`.
 - **git**, to clone this tool and pull updates. Your own documents do not need to be in git.
 - **A Notion account in the workspace** that holds the pages you will publish to, with permission to edit them.
-- **The client secret**, from whoever runs this tool for the team (see [step 2](#2-get-the-client-secret-from-your-admin)). It is the only shared secret, and you will paste it into your own terminal once.
+- **Permission to create a Notion connection** in your workspace. Step 2 creates it. If Notion will not let you, ask a workspace owner. Do not ask anyone to share their secret.
 - **Claude Code**, if you want Claude to run the sync for you. The scripts work without it.
 
 ### 1. Get the tool
@@ -107,24 +104,31 @@ Clone this repository somewhere permanent. Your documents live wherever you keep
 git clone https://github.com/yosia1203/notion-sync.git ~/dev/notion-sync
 ```
 
-### 2. Get the client secret from your admin
+### 2. Create your own Notion connection
 
-Ask whoever set up this tool for your team. Your admin is the person who owns the Notion connection. They should send it through the team password manager, or another way they trust for passwords.
+Create a public connection in Notion's Developer portal, then copy its client ID and client secret. The [connection setup guide](docs/notion-connection-setup.md) has every step, including the settings that matter:
 
-Keep it for the next step only. Do not save it in a file, commit it, or paste it into chat or into Claude. The tool never writes it to disk.
+- Set the **Redirect URI** to exactly `http://localhost`.
+- Choose **Selected workspaces only** for the installation scope, and pick your workspace.
+- Copy the client ID and secret from the connection's **Configuration** tab.
+- Put the secret in your password manager, and the client ID in your shell profile:
 
-If you are the admin, see [where the secret comes from](#for-the-admin-where-the-secret-comes-from).
+```bash
+echo 'export NOTION_CLIENT_ID="<your client ID>"' >> ~/.zshrc
+```
+
+Open a new terminal afterwards. Do not save the secret in a file, commit it, paste it into chat or into Claude, or type it inline in a command, because that line is kept in your shell history.
 
 ### 3. Sign in to Notion and create your token
 
-This signs you in through your team's connection and gives the tool a token that belongs to you, so page history shows your name against your edits.
+This signs you in through your own connection and gives the tool a token that belongs to you, so page history shows your name against your edits.
 
 ```bash
 cd ~/dev/notion-sync
 python3 scripts/notion_auth.py url
 ```
 
-Open the printed link in your browser. Notion asks you to approve the connection and to choose which pages it may access. Select the pages or database you will publish to, then approve.
+Open the printed link in your browser. Notion asks you to approve the connection and to choose which pages it may access. Select the pages or database you will publish to, then approve. If `NOTION_CLIENT_ID` is not set, the tool asks for the client ID first.
 
 The browser then fails to load a page at `http://localhost/?code=...`. That is expected: the authorization code is in the address bar. Copy the whole address and run:
 
@@ -132,7 +136,7 @@ The browser then fails to load a page at `http://localhost/?code=...`. That is e
 python3 scripts/notion_auth.py exchange '<the address you copied>'
 ```
 
-Paste the client secret when prompted. Nothing is echoed. (Or set `NOTION_CLIENT_SECRET` in that shell first.)
+Paste the client secret from your password manager when prompted. Nothing is echoed.
 
 When it works you see `Token stored at ~/.config/notion-sync/notion_token.json` and the name of your workspace. Only you can read that file, and it sits outside any project folder. The scripts never print the token. Treat it like a password: do not share it or commit it.
 
@@ -177,12 +181,6 @@ ln -s ~/dev/notion-sync/.claude/skills/writing-for-notion ~/.claude/skills/writi
 ```
 
 Start a new Claude Code session. Ask "what skills do you have for Notion?" and both should appear. [Work with Claude Code](#work-with-claude-code) says what each does.
-
-### For the admin: where the secret comes from
-
-The client secret is issued by Notion when the connection is created, and it is shown on the connection's **Configuration** tab in Notion's Developer portal, at [app.notion.com/developers/connections](https://app.notion.com/developers/connections).
-
-The [connection setup guide](docs/notion-connection-setup.md) covers the rest: creating the connection, the redirect URI it needs, pointing the tool at its client ID, sharing the secret, and testing with one teammate.
 
 ### Update or sign out
 
@@ -343,7 +341,7 @@ A document can be synced only when it has a Notion page and says where it is.
    ```
 
    Frontmatter itself is never published. `published_url` is also what other documents' links resolve to.
-3. Give the connection access to the page. In Notion, open the page, open its **⋯** menu, choose **Connections**, and add your team's connection. Without this the tool cannot see the page, and every command fails with a 404. You can do this only on pages you have full access to. If you selected the page on Notion's consent screen during sign-in, it is already done. Menu labels change from time to time, so look for **Connections** in the page's menu.
+3. Give the connection access to the page. In Notion, open the page, open its **⋯** menu, choose **Connections**, and add your connection. Without this the tool cannot see the page, and every command fails with a 404. You can do this only on pages you have full access to. If you selected the page on Notion's consent screen during sign-in, it is already done. Menu labels change from time to time, so look for **Connections** in the page's menu.
 4. Start the body with a title heading (`#`), then the sections.
 
 Frontmatter fields the script reads: `published_url`, and `imported: true` for prose that is someone else's wording. The script never writes frontmatter. To track when you last synced, record it yourself.
@@ -398,7 +396,7 @@ Replace the paths and names. Claude will ask for the checkout location if you le
 **First-time setup**
 
 ```text
-Set up the Notion sync for me. The tool is in ~/dev/notion-sync. Check whether I am already signed in, and if not, walk me through the sign-in. I will type the client secret myself in my own terminal, so do not ask me for it here. When it works, run a read-only check against docs/my-document.md.
+Set up the Notion sync for me. The tool is in ~/dev/notion-sync. Check whether I am already signed in, and if not, walk me through the sign-in. I have created my own Notion connection (see docs/notion-connection-setup.md). I will type the client secret myself in my own terminal, so do not ask me for it here. When it works, run a read-only check against docs/my-document.md.
 ```
 
 **Sync a document**
@@ -483,6 +481,8 @@ Refusals begin with `REFUSING:`. Read the message and fix the document or the pa
 | You see | Do this |
 |---|---|
 | No such file `notion_token.json` | Run the [setup](#set-up) steps. |
+| Notion refuses the sign-in link | The redirect URI on your connection is not exactly `http://localhost`, or the client ID is wrong. |
+| `exchange` fails with an authentication error | The client secret does not belong to the client ID you used. Both must come from the same connection. |
 | `invalid_grant` on `exchange` | The code was used or expired. Run `url` and approve again. |
 | A 404 or `object_not_found` from the API | Most likely the connection was never added to the page. Add it under the page's **⋯** menu, **Connections** (see [Prepare a document](#prepare-a-document)), or run `url` again and select the page. |
 | `verify` fails on an unresolved link | The linked document has an empty `published_url`. Publish that page first, or remove the link. |
@@ -500,6 +500,6 @@ Refusals begin with `REFUSING:`. Read the message and fix the document or the pa
 | `scripts/notion_publish.py` | Verify, plan and apply, comments |
 | `scripts/notion_sync.py` | Repair whitespace in code blocks |
 | `scripts/test_*.py` | Offline tests against an in-memory Notion |
-| `docs/notion-connection-setup.md` | Admin guide: create and manage the Notion connection |
+| `docs/notion-connection-setup.md` | Create your own Notion connection, store its secret, and sign in |
 | `.claude/skills/notion-sync/` | Skill: operate the tool |
 | `.claude/skills/writing-for-notion/` | Skill: write documents and the publishing procedure |

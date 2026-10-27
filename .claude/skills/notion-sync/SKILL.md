@@ -22,10 +22,11 @@ The checkout's `README.md` is the full reference. Read it when a command or erro
 The token is `~/.config/notion-sync/notion_token.json`.
 
 - Check that it exists with `test -f ~/.config/notion-sync/notion_token.json`. Never print, read aloud, or copy the file's contents.
-- If it is missing, walk the user through setup. They run the commands, because the client secret must never pass through this conversation:
-  1. `python3 <checkout>/scripts/notion_auth.py url`: they open the printed link, approve, and grant access to the pages they will publish to.
-  2. The browser then fails to load `http://localhost/?code=...`. That is expected. They copy the whole address.
-  3. `python3 <checkout>/scripts/notion_auth.py exchange '<address>'`: they paste the client secret when prompted. It is not echoed.
+- If it is missing, walk the user through setup. Everyone uses a Notion connection of their own, so first check that they have created one. The checkout's `docs/notion-connection-setup.md` has the steps. They run the commands, because the client secret must never pass through this conversation:
+  1. `export NOTION_CLIENT_ID=<their client ID>`, or type it at the prompt. The ID is not a secret.
+  2. `python3 <checkout>/scripts/notion_auth.py url`: they open the printed link, approve, and select the pages they will publish to.
+  3. The browser then fails to load `http://localhost/?code=...`. That is expected. They copy the whole address.
+  4. `python3 <checkout>/scripts/notion_auth.py exchange '<address>'`: they paste the client secret from their password manager when prompted. It is not echoed.
 - Never ask the user to paste the client secret, the token, or a password into chat. If they offer it, tell them not to and point at the prompt in their own terminal.
 - A code is single-use. After `invalid_grant`, start again from `url`.
 
@@ -35,7 +36,7 @@ Prove the connection works with a read-only command on a document that has a pag
 
 Work one region at a time. Do not batch a whole document into one write.
 
-1. **Preconditions.** Open the document. It must have `published_url` in its frontmatter. If not, stop: the page has to be created first (Notion import), and the user records its address. Do not create pages through the script. The team's connection must also have been added to the page (the page's **⋯** menu, **Connections**). Notion hides a page from a connection that was never added, so a 404 almost always means this. Tell the user to add it; you cannot do it for them.
+1. **Preconditions.** Open the document. It must have `published_url` in its frontmatter. If not, stop: the page has to be created first (Notion import), and the user records its address. Do not create pages through the script. The user's connection must also have been added to the page (the page's **⋯** menu, **Connections**). Notion hides a page from a connection that was never added, so a 404 almost always means this. Tell the user to add it; you cannot do it for them.
 2. **Inspect.** Run `verify <doc>` and `manual <doc>`. Both are read-only. Report which regions differ, which are manual, and which are blocked.
 3. **Settle the direction.** For an authored document the local file wins. For one marked `imported: true` the page wins: differences in wording are not to be overwritten. If the file and the page disagree on content and it is not obvious which is right, ask the user. Do not choose the newer one.
 4. **Plan.** For each region that differs, run `plan <doc> "<heading>"` and show the user what it would create and delete.

@@ -1,82 +1,114 @@
-# Set up the Notion connection
+# Create your own Notion connection
 
-This guide is for the person who owns the team's Notion connection. You do it once. Teammates never need it: they follow the [README](../README.md#set-up) and ask you for the client secret.
+Everyone who uses this tool creates a Notion connection of their own. Nothing is shared: your connection has its own client ID and its own client secret, and only you hold them. You do this once.
 
-A connection is the app that people sign in through. Notion issues it a **client ID** and a **client secret** when it is created. This tool uses OAuth, so each teammate signs in through the connection and gets a personal token of their own.
+A connection is the app that you sign in through. Notion gives it a **client ID** and a **client secret** when you create it. The tool uses them once, to sign you in and to create your personal token. After that, the token is all it needs.
 
-Notion's documentation is the source for the steps below. Where the documentation is silent, this guide says so instead of guessing. Notion renames menus from time to time, so if a label differs, trust the screen.
+This guide follows Notion's developer documentation. Where the documentation says nothing, this guide says so instead of guessing. Notion renames menus from time to time, so if a label differs, trust the screen.
 
 ## Contents
 
-- [Check whether you already have one](#check-whether-you-already-have-one)
+- [What you end up with](#what-you-end-up-with)
+- [Before you start](#before-you-start)
 - [Create the connection](#create-the-connection)
-- [Find the client ID and secret](#find-the-client-id-and-secret)
-- [Point the tool at the connection](#point-the-tool-at-the-connection)
-- [Share the secret with the team](#share-the-secret-with-the-team)
-- [Test with one teammate](#test-with-one-teammate)
+- [Copy the client ID and secret](#copy-the-client-id-and-secret)
+- [Store them](#store-them)
+- [Sign in](#sign-in)
+- [Add the connection to your pages](#add-the-connection-to-your-pages)
+- [If something goes wrong](#if-something-goes-wrong)
 - [What the documentation does not say](#what-the-documentation-does-not-say)
 
-## Check whether you already have one
+## What you end up with
 
-1. Sign in to Notion and open the Developer portal's connections page: [app.notion.com/developers/connections](https://app.notion.com/developers/connections).
-2. If the team's connection is listed, skip to [Find the client ID and secret](#find-the-client-id-and-secret).
-3. If this tool already works for you, a connection exists. Its client ID is the `CLIENT_ID` value in `scripts/notion_auth.py`. Match it against the IDs on the Configuration tab to find the right one.
+| Thing | What it is | Where it lives |
+|---|---|---|
+| Client ID | The public name of your connection. Not a secret. | Your shell profile, as `NOTION_CLIENT_ID`. |
+| Client secret | The connection's password. | Your password manager. Typed once at a prompt. |
+| Token | Your personal key to Notion. Created when you sign in. | `~/.config/notion-sync/notion_token.json`, written by the tool. |
+
+## Before you start
+
+- A Notion account in the workspace that holds the pages you will publish to.
+- Permission to create connections there. Notion's help page says only workspace owners can create them, though members have created them in practice. If Notion will not let you, ask a workspace owner. Do not ask them to share their secret.
 
 ## Create the connection
 
-Skip this if the connection exists.
+1. Sign in to Notion and open the Developer portal's connections page: [app.notion.com/developers/connections](https://app.notion.com/developers/connections).
+2. Create a new **public connection**. The tool signs in with OAuth, which is what a public connection provides. If Notion tells you to create an internal connection first and convert it, do that.
+3. Under the **OAuth configuration** section, set the **Redirect URI** to exactly `http://localhost`. Do not add a port or a trailing slash. The tool uses this address. Notion sends you back to it after you approve, and the browser then fails to load it. That is expected: the one-time code is in the address bar.
+4. Set the **Installation scope**. The choices are "Any workspace" and "Selected workspaces only". Choose **Selected workspaces only** and select the workspace that holds your documents. Notion states that this cannot be changed after creation.
+5. Fill in whatever else the form asks for. A name that says whose it is, such as `notion-sync <your name>`, helps if someone else looks at the list.
+6. Save or submit the connection. Notion says a connection's **Authorization URL** field appears once it is submitted for review. The tool builds its own sign-in link, so you do not need that field. If Notion makes you wait for an approval before you can sign in, tell the person who set this tool up.
 
-1. On the connections page, create a new **public connection**. The tool signs people in with OAuth, which is what a public connection provides.
-2. Under the **OAuth configuration** section, set the **Redirect URI** to exactly `http://localhost`. The tool uses that address. Notion sends people back to it with a `code` in the address bar, and the browser then fails to load it. That is expected.
-3. Set the **Installation scope**. The choices are "Any workspace" and "Selected workspaces only". Notion states that this cannot be changed after creation. Pick the narrowest scope that covers the workspaces your teammates sign in from, since you cannot widen or narrow it later.
-4. Fill in whatever else the form requires, and submit the connection.
+## Copy the client ID and secret
 
-Notion says the connection's **Authorization URL** field appears once it is submitted for review. This tool builds its own sign-in link from the client ID, so you do not need that field. Whether a connection must be approved before teammates can use it is not stated in the documentation, so the [test below](#test-with-one-teammate) is the real check.
-
-## Find the client ID and secret
-
-1. Open the connection on the connections page.
+1. Open your connection on the connections page.
 2. Open its **Configuration** tab. The client ID and the client secret are listed there.
-3. Copy the secret when you need to hand it to someone. Notion keeps it on this page, so you do not need to store a copy of your own beyond the password manager.
+3. Copy both. Save the secret in your password manager now. The documentation does not say whether Notion shows it again later, so do not rely on it.
 
-Notion's guidance is to keep these out of source code and version control. Treat the secret like a password.
+## Store them
 
-## Point the tool at the connection
+**The client ID** is not a secret. Put it in your shell profile so the tool never has to ask. For zsh:
 
-The client ID is built into the tool. If you created a new connection, or the IDs differ, open `scripts/notion_auth.py` and replace the `CLIENT_ID` value with the one from the Configuration tab. Commit and push the change so teammates get it with `git pull`. The client ID is not a secret.
+```bash
+echo 'export NOTION_CLIENT_ID="<your client ID>"' >> ~/.zshrc
+```
 
-The token request sends the ID and the secret together as HTTP Basic authentication, which is why the tool asks for the secret and nothing else.
+Open a new terminal afterwards. For bash, use `~/.bashrc`. If you skip this, the tool asks for the ID each time you sign in.
 
-## Share the secret with the team
+**The client secret** goes in your password manager and nowhere else. When the tool asks for it, you paste it at a prompt that does not echo. The tool never writes it to disk.
 
-- Put the secret in your team password manager and share it with each teammate individually.
-- Do not put it in the repository, in chat, in a ticket, or in an email.
-- Tell them it is for one terminal prompt and does not need saving.
+- Do not put it in `~/.zshrc`, in a repository, in a note, in chat, or in a message to Claude.
+- Do not type it inline, as in `NOTION_CLIENT_SECRET=... python3 ...`. That line is saved in your shell history.
+- You need it only when you sign in. After that the token is what the tool uses. You will need it again to sign in on a new machine or after deleting the token.
 
-## Test with one teammate
+**The token** is saved for you, with owner-only permissions, outside any project folder. Treat it like a password: do not share it or commit it.
 
-Before you announce the tool, have one teammate follow the [README setup](../README.md#set-up) from the start. It passes when they:
+## Sign in
 
-1. Open the sign-in link and see Notion's consent screen. It asks them to choose which pages the connection may access.
-2. Finish `exchange` and see `Token stored at ...` and your workspace name.
-3. Run `python3 scripts/notion_publish.py manual <doc>` on a document with a `published_url` and get a list of regions.
+From the tool's folder, print your sign-in link:
 
-Only the person who authorizes can use the pages they shared, and a person can share only pages they have full access to. If a teammate cannot see a page in the picker, they lack full access to it.
+```bash
+cd ~/dev/notion-sync
+python3 scripts/notion_auth.py url
+```
+
+Open the link. Notion shows a consent screen. Approve it, and select the pages or database you will publish to. The browser then fails to load `http://localhost/?code=...`. Copy the whole address and run:
+
+```bash
+python3 scripts/notion_auth.py exchange '<the address you copied>'
+```
+
+Paste the client secret at the prompt. When it works you see `Token stored at ...` and the name of your workspace.
+
+## Add the connection to your pages
+
+The tool can read and write only pages your connection has been added to. For each page you publish to:
+
+1. Open the page in Notion.
+2. Open the page's **⋯** menu and choose **Connections**.
+3. Add your connection.
+
+You can do this only on pages you have full access to. A page you selected on the consent screen already has it. Without this step every command fails with a 404.
+
+## If something goes wrong
 
 | Symptom | Likely cause |
 |---|---|
-| Notion refuses the sign-in link | The teammate's workspace is outside the connection's installation scope, or the redirect URI is not exactly `http://localhost`. |
-| `invalid_grant` on `exchange` | The one-time code was used or expired. Run `url` again. |
-| Authorized, but `manual` returns 404 | The connection was not added to the page. Add it under the page's **⋯** menu, **Connections**, or sign in again and select the page. |
-| Teammate sees no pages to select | They need full access to the page in Notion first. |
+| Notion refuses the sign-in link | The redirect URI is not exactly `http://localhost`, or the client ID is wrong. |
+| `invalid_grant` on `exchange` | The one-time code was used or expired. Run `url` again and approve again. |
+| `exchange` fails with an authentication error | The client secret does not belong to the client ID you used. Check that both come from the same connection. |
+| `manual` returns 404 | The connection was not added to the page. See [above](#add-the-connection-to-your-pages). |
+| The consent screen shows no pages to select | You need full access to the page in Notion first. |
 
 ## What the documentation does not say
 
-Notion's authorization guide does not state:
+Notion's documentation does not state:
 
-- how to regenerate or rotate the client secret. If the secret leaks, look for a regenerate option on the Configuration tab and tell the team. If there is none, you would have to create a new connection and update `CLIENT_ID`.
-- whether a connection must be approved before other users can authorize it.
-- who in a workspace is allowed to create a public connection.
-- which required fields the creation form has.
+- how to regenerate or rotate the client secret. If yours leaks, look for a regenerate option on the Configuration tab. If there is none, create a new connection and sign in again.
+- whether a connection must be approved before you can sign in through it.
+- which fields the creation form requires.
+- whether the secret can be viewed again after you first copy it.
+- who in a workspace may create a connection. The help page and what people have seen in practice disagree.
 
 If you find the answers, add them here.

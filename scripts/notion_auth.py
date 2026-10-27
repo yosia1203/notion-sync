@@ -11,6 +11,9 @@ browser lands on a page that cannot load. That is expected: the authorization co
 is in the address bar, and this script takes it from there rather than running a
 server on a privileged port.
 
+Each person signs in through a Notion connection of their own. The connection's
+client ID is read from NOTION_CLIENT_ID, or prompted for. It is not a secret.
+
 The client secret is read from NOTION_CLIENT_SECRET, or prompted for without echo.
 It is never written to disk. The access token is written outside the repository,
 readable only by the owner.
@@ -25,16 +28,26 @@ import sys
 import urllib.parse
 import urllib.request
 
-CLIENT_ID = "3d5d872b-594c-815c-a19e-0037c12e8124"
 REDIRECT_URI = "http://localhost"
 TOKEN_PATH = os.path.expanduser("~/.config/notion-sync/notion_token.json")
 AUTHORIZE = "https://api.notion.com/v1/oauth/authorize"
 TOKEN_URL = "https://api.notion.com/v1/oauth/token"
 
 
+def client_id():
+    """The ID of the signed-in person's own connection. It names the connection and
+    is not a secret, so it may be typed, exported, or kept in a shell profile."""
+    found = (os.environ.get("NOTION_CLIENT_ID") or "").strip()
+    if not found:
+        found = input("Notion client ID (from your connection's Configuration tab): ").strip()
+    if not found:
+        sys.exit("No client ID supplied. Set NOTION_CLIENT_ID or type it at the prompt.")
+    return found
+
+
 def cmd_url():
     q = urllib.parse.urlencode({
-        "client_id": CLIENT_ID,
+        "client_id": client_id(),
         "response_type": "code",
         "owner": "user",
         "redirect_uri": REDIRECT_URI,
@@ -60,7 +73,7 @@ def cmd_exchange(arg):
     if not secret:
         sys.exit("No client secret supplied.")
 
-    basic = base64.b64encode(f"{CLIENT_ID}:{secret}".encode()).decode()
+    basic = base64.b64encode(f"{client_id()}:{secret}".encode()).decode()
     body = json.dumps({
         "grant_type": "authorization_code",
         "code": code,
