@@ -85,7 +85,7 @@ You need:
 Clone this repository somewhere permanent. Your documents live in other repositories; this checkout holds only the tool.
 
 ```bash
-git clone <this repository's address> ~/dev/notion-sync
+git clone https://github.com/yosia1203/notion-sync.git ~/dev/notion-sync
 ```
 
 ### 2. Get the client secret

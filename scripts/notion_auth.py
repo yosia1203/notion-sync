@@ -39,7 +39,7 @@ def cmd_url():
         "owner": "user",
         "redirect_uri": REDIRECT_URI,
     })
-    print(f"\nOpen this, approve, and grant access to the Engineering RFC database:\n\n{AUTHORIZE}?{q}\n")
+    print(f"\nOpen this, approve, and grant access to the pages or databases you will publish to:\n\n{AUTHORIZE}?{q}\n")
     print("The browser will then fail to load http://localhost/?code=...  That is expected.")
     print("Copy the whole address bar and pass it to:  notion_auth.py exchange '<url>'\n")
 
