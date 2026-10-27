@@ -180,16 +180,9 @@ Start a new Claude Code session. Ask "what skills do you have for Notion?" and b
 
 ### For the admin: where the secret comes from
 
-Do this once for the team. Teammates never need to see Notion's connection settings.
+The client secret is issued by Notion when the connection is created, and it is shown on the connection's **Configuration** tab in Notion's Developer portal, at [app.notion.com/developers/connections](https://app.notion.com/developers/connections).
 
-1. In Notion, open **Settings**, then **Connections**, and choose the option to develop or manage integrations. It opens your integrations page, at `notion.so/profile/integrations`. Menu labels change from time to time, so look for the page that lists your connections.
-2. Open the connection this tool uses. Its settings show an **OAuth client ID** and an **OAuth client secret**. Copy the secret.
-3. Check that the client ID matches `CLIENT_ID` in `scripts/notion_auth.py`. If you create a new connection, put its client ID there and push the change.
-4. Check that the connection's redirect URI is exactly `http://localhost`. The sign-in uses it, and Notion rejects the sign-in if it is missing.
-5. Store the secret in your team password manager and share it with each teammate individually. Do not put it in the repository, in chat, or in a ticket.
-6. Check that your teammates are allowed to authorize the connection. The scripts cannot see these Notion settings. Test with one teammate before you announce it.
-
-If the secret leaks, generate a new one on the same page and tell the team.
+The [connection setup guide](docs/notion-connection-setup.md) covers the rest: creating the connection, the redirect URI it needs, pointing the tool at its client ID, sharing the secret, and testing with one teammate.
 
 ### Update or sign out
 
@@ -506,5 +499,6 @@ Refusals begin with `REFUSING:`. Read the message and fix the document or the pa
 | `scripts/notion_publish.py` | Verify, plan and apply, comments |
 | `scripts/notion_sync.py` | Repair whitespace in code blocks |
 | `scripts/test_*.py` | Offline tests against an in-memory Notion |
+| `docs/notion-connection-setup.md` | Admin guide: create and manage the Notion connection |
 | `.claude/skills/notion-sync/` | Skill: operate the tool |
 | `.claude/skills/writing-for-notion/` | Skill: write documents and the publishing procedure |
