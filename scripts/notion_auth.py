@@ -4,15 +4,18 @@
 Two steps, run in order:
 
     python3 scripts/notion_auth.py url
-    python3 scripts/notion_auth.py exchange '<the http://localhost/?code=... URL>'
+    python3 scripts/notion_auth.py exchange '<the http://localhost/?code=... URL>' [--out <file>]
 
 The redirect URI registered on the connection is bare `http://localhost`, so the
 browser lands on a page that cannot load. That is expected: the authorization code
 is in the address bar, and this script takes it from there rather than running a
 server on a privileged port.
 
-Each person signs in through a Notion connection of their own. The connection's
-client ID is read from NOTION_CLIENT_ID, or prompted for. It is not a secret.
+The team shares one Notion connection. Anyone can run `url`, because the connection's
+client ID is read from NOTION_CLIENT_ID, or prompted for, and is not a secret. Only the
+connection owner holds the client secret, so only the owner runs `exchange`. To make a
+token for a teammate, the owner passes --out so the teammate's token goes to its own file
+and the owner's token is not replaced.
 
 The client secret is read from NOTION_CLIENT_SECRET, or prompted for without echo.
 It is never written to disk. The access token is written outside the repository,
@@ -35,7 +38,7 @@ TOKEN_URL = "https://api.notion.com/v1/oauth/token"
 
 
 def client_id():
-    """The ID of the signed-in person's own connection. It names the connection and
+    """The ID of the team's Notion connection. It names the connection and
     is not a secret, so it may be typed, exported, or kept in a shell profile."""
     found = (os.environ.get("NOTION_CLIENT_ID") or "").strip()
     if not found:
@@ -67,7 +70,10 @@ def extract_code(arg):
     return arg.strip()
 
 
-def cmd_exchange(arg):
+def cmd_exchange(arg, out=None):
+    """Trade the one-time code for a token and save it. `out` names a different file, so a
+    token made for someone else does not replace the signed-in person's own."""
+    token_path = os.path.expanduser(out) if out else TOKEN_PATH
     code = extract_code(arg)
     secret = os.environ.get("NOTION_CLIENT_SECRET") or getpass.getpass("Notion client secret (not echoed): ")
     if not secret:
@@ -94,13 +100,13 @@ def cmd_exchange(arg):
                  "A 400 with 'invalid_grant' usually means the code was already used or has expired: "
                  "codes are single-use and short-lived, so re-run 'url' and approve again.")
 
-    os.makedirs(os.path.dirname(TOKEN_PATH), exist_ok=True)
-    with open(TOKEN_PATH, "w") as f:
+    os.makedirs(os.path.dirname(os.path.abspath(token_path)), exist_ok=True)
+    with open(token_path, "w") as f:
         json.dump(payload, f, indent=2)
-    os.chmod(TOKEN_PATH, stat.S_IRUSR | stat.S_IWUSR)
+    os.chmod(token_path, stat.S_IRUSR | stat.S_IWUSR)
 
     ws = payload.get("workspace_name")
-    print(f"\nToken stored at {TOKEN_PATH} (owner-only).")
+    print(f"\nToken stored at {token_path} (owner-only).")
     print(f"Workspace: {ws}")
     print(f"Bot id:    {payload.get('bot_id')}")
     print("\nThe token itself is not printed. Nothing was written to the repository.\n")
@@ -112,6 +118,14 @@ if __name__ == "__main__":
     if sys.argv[1] == "url":
         cmd_url()
     else:
-        if len(sys.argv) < 3:
-            sys.exit("Usage: notion_auth.py exchange '<redirected URL or code>'")
-        cmd_exchange(sys.argv[2])
+        args = sys.argv[2:]
+        out = None
+        if "--out" in args:
+            i = args.index("--out")
+            if i + 1 >= len(args):
+                sys.exit("--out needs a file path.")
+            out = args[i + 1]
+            del args[i:i + 2]
+        if len(args) != 1:
+            sys.exit("Usage: notion_auth.py exchange '<redirected URL or code>' [--out <token file>]")
+        cmd_exchange(args[0], out)

@@ -48,5 +48,30 @@ class UrlCommand(unittest.TestCase):
         self.assertEqual(q["owner"], ["user"])
 
 
+class ExchangeOutput(unittest.TestCase):
+    def _run(self, **kw):
+        import json, tempfile
+        reply = io.BytesIO(json.dumps({"access_token": "t", "workspace_name": "W", "bot_id": "b"}).encode())
+        with tempfile.TemporaryDirectory() as home, \
+                patch.object(auth, "TOKEN_PATH", os.path.join(home, "own.json")), \
+                patch.dict(os.environ, {"NOTION_CLIENT_ID": "id", "NOTION_CLIENT_SECRET": "s"}), \
+                patch("urllib.request.urlopen", return_value=reply), \
+                contextlib.redirect_stdout(io.StringIO()):
+            kw = {k: (os.path.join(home, v) if k == "out" else v) for k, v in kw.items()}
+            auth.cmd_exchange("http://localhost/?code=c", **kw)
+            return os.path.exists(os.path.join(home, "own.json")), os.path.exists(os.path.join(home, "other", "t.json")), \
+                oct(os.stat(os.path.join(home, "other", "t.json")).st_mode & 0o777) if kw.get("out") else None
+
+    def test_default_writes_the_signed_in_persons_file(self):
+        own, other, _ = self._run()
+        self.assertTrue(own)
+
+    def test_out_writes_elsewhere_and_leaves_own_token_alone(self):
+        own, other, mode = self._run(out="other/t.json")
+        self.assertFalse(own)
+        self.assertTrue(other)
+        self.assertEqual(mode, "0o600")
+
+
 if __name__ == "__main__":
     unittest.main()

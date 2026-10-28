@@ -16,8 +16,9 @@ It is plain Python 3 with nothing to install, plus two Claude Code skills so Cla
 - [Set up](#set-up)
   - [Before you start](#before-you-start)
   - [1. Get the tool](#1-get-the-tool)
-  - [2. Create your own Notion connection](#2-create-your-own-notion-connection)
-  - [3. Sign in to Notion and create your token](#3-sign-in-to-notion-and-create-your-token)
+  - [2. Approve the connection](#2-approve-the-connection)
+  - [3. Save the token the owner sends back](#3-save-the-token-the-owner-sends-back)
+  - [For the connection owner: make a teammate's token](#for-the-connection-owner-make-a-teammates-token)
   - [4. Check the install](#4-check-the-install)
   - [5. Try it on a real page](#5-try-it-on-a-real-page)
   - [6. Install the Claude Code skills](#6-install-the-claude-code-skills)
@@ -72,19 +73,17 @@ Run it a second time with no changes and nothing is written.
 
 ## Set up
 
-Do this once per person. It takes about ten minutes.
+Do this once per person. It takes about ten minutes, plus a wait for the connection owner to send you a token.
 
-Everyone signs in through a Notion connection of their own, so nothing secret is shared between people. Three terms come up, and they are easy to mix up:
+The whole team signs in through one Notion connection, which one person owns: the **connection owner**. You never handle the connection's secret. You approve the connection in your browser, the owner turns your approval into a token, and the owner sends it to you. Three terms come up, and they are easy to mix up:
 
-| Term | What it is | Where it lives |
+| Term | What it is | Who holds it |
 |---|---|---|
-| Client ID | The public name of your connection. Not a secret. | Your shell profile, as `NOTION_CLIENT_ID`. |
-| Client secret | Your connection's password. Only you have it. | Your password manager. Typed once at a prompt. |
-| Token | Your personal key to Notion. The scripts use it to edit pages as you. | `~/.config/notion-sync/notion_token.json`, written by the tool when you sign in. |
+| Client ID | The public name of the connection. Not a secret. | Anyone. The owner gives it to you. |
+| Client secret | The connection's password. | Only the connection owner. |
+| Token | Your personal key to Notion. The scripts use it to edit pages. | You, in `~/.config/notion-sync/notion_token.json`. |
 
-You create the connection yourself (step 2) and it gives you the client ID and the client secret. You never download a token from Notion. You create it by signing in once.
-
-If OAuth sounds like it should need no secret: your sign-in in the browser needs none. The secret belongs to the connection (the app), not to you. After you approve, Notion hands the tool a one-time code, and the tool must prove it is your connection when it swaps that code for your token. That proof is the client secret. The tool never writes it to disk, and you need it only when you sign in.
+If OAuth sounds like it should need no secret: your approval in the browser needs none. The secret belongs to the connection (the app), not to you. After you approve, Notion hands back a one-time code, and swapping that code for a token requires the connection to prove who it is. That proof is the client secret, which is why the owner does that one step.
 
 ### Before you start
 
@@ -93,7 +92,7 @@ You need:
 - **Python 3.9 or newer.** Check with `python3 --version`. There is nothing to `pip install`.
 - **git**, to clone this tool and pull updates. Your own documents do not need to be in git.
 - **A Notion account in the workspace** that holds the pages you will publish to, with permission to edit them.
-- **Permission to create a Notion connection** in your workspace. Step 2 creates it. If Notion will not let you, ask a workspace owner. Do not ask anyone to share their secret.
+- **The connection owner.** You need their client ID (or a ready-made sign-in link) and a private way to message them, such as a direct message. You do not need permission to create a connection yourself.
 - **Claude Code**, if you want Claude to run the sync for you. The scripts work without it.
 
 ### 1. Get the tool
@@ -104,43 +103,51 @@ Clone this repository somewhere permanent. Your documents live wherever you keep
 git clone https://github.com/yosia1203/notion-sync.git ~/dev/notion-sync
 ```
 
-### 2. Create your own Notion connection
+### 2. Approve the connection
 
-Create a public connection in Notion's Developer portal, then copy its client ID and client secret. The [connection setup guide](docs/notion-connection-setup.md) has every step, including the settings that matter:
-
-- Set the **Redirect URI** to exactly `http://localhost`.
-- Choose **Selected workspaces only** for the installation scope, and pick your workspace.
-- Copy the client ID and secret from the connection's **Configuration** tab.
-- Put the secret in your password manager, and the client ID in your shell profile:
-
-```bash
-echo 'export NOTION_CLIENT_ID="<your client ID>"' >> ~/.zshrc
-```
-
-Open a new terminal afterwards. Do not save the secret in a file, commit it, paste it into chat or into Claude, or type it inline in a command, because that line is kept in your shell history.
-
-### 3. Sign in to Notion and create your token
-
-This signs you in through your own connection and gives the tool a token that belongs to you, so page history shows your name against your edits.
+Open the sign-in link the owner sent you. If they sent the client ID instead, print the link yourself:
 
 ```bash
 cd ~/dev/notion-sync
-python3 scripts/notion_auth.py url
+NOTION_CLIENT_ID=<client ID from the owner> python3 scripts/notion_auth.py url
 ```
 
-Open the printed link in your browser. Notion asks you to approve the connection and to choose which pages it may access. Select the pages or database you will publish to, then approve. If `NOTION_CLIENT_ID` is not set, the tool asks for the client ID first.
+Open the link in your browser while you are signed in to Notion. Notion asks you to approve the connection and to choose which pages it may access. Select the pages or database you will publish to, then approve.
 
-The browser then fails to load a page at `http://localhost/?code=...`. That is expected: the authorization code is in the address bar. Copy the whole address and run:
+The browser then fails to load a page at `http://localhost/?code=...`. That is expected: the authorization code is in the address bar. Copy the whole address and send it to the connection owner in a private message. Do it straight away: a code is single-use and expires quickly.
+
+Do not run `exchange` yourself. It needs the client secret, which you do not have.
+
+### 3. Save the token the owner sends back
+
+The owner sends you a file. Save it where the tool looks for it and make it readable only by you:
 
 ```bash
-python3 scripts/notion_auth.py exchange '<the address you copied>'
+mkdir -p ~/.config/notion-sync
 ```
 
-Paste the client secret from your password manager when prompted. Nothing is echoed.
+```bash
+mv ~/Downloads/<the file the owner sent> ~/.config/notion-sync/notion_token.json
+```
 
-When it works you see `Token stored at ~/.config/notion-sync/notion_token.json` and the name of your workspace. Only you can read that file, and it sits outside any project folder. The scripts never print the token. Treat it like a password: do not share it or commit it.
+```bash
+chmod 600 ~/.config/notion-sync/notion_token.json
+```
 
-An authorization code is single-use and short-lived. If `exchange` fails with `invalid_grant`, run `url` again and approve again.
+The token is a key to the pages you approved, so treat it like a password. Do not commit it, paste it into chat or into Claude, or forward it. Delete the owner's message once you have saved it. The scripts never print it.
+
+If a later command fails with an authorization error and the page connection is fine, the token may have been revoked or may have expired. Repeat steps 2 and 3.
+
+### For the connection owner: make a teammate's token
+
+You hold the client secret. When a teammate sends you the address they copied after approving (it starts with `http://localhost/?code=`), trade it for a token saved to a separate file, so your own token is untouched:
+
+```bash
+cd ~/dev/notion-sync
+NOTION_CLIENT_ID=<client ID> python3 scripts/notion_auth.py exchange '<address from the teammate>' --out ~/teammate-token.json
+```
+
+Quote the address, because it contains `&`. Paste the client secret at the hidden prompt. Send the file to the teammate through a private channel, then delete your copy. Without `--out`, `exchange` replaces your own token. The [connection guide](docs/notion-connection-setup.md) covers creating the connection, storing the secret, and what rotating it does.
 
 ### 4. Check the install
 
@@ -190,7 +197,7 @@ Update the tool and the skills together:
 cd ~/dev/notion-sync && git pull
 ```
 
-To sign out, delete the token. Run `notion_auth.py url` and `exchange` again to sign back in.
+To sign out, delete the token. To sign back in, repeat steps 2 and 3.
 
 ```bash
 rm ~/.config/notion-sync/notion_token.json
@@ -341,7 +348,7 @@ A document can be synced only when it has a Notion page and says where it is.
    ```
 
    Frontmatter itself is never published. `published_url` is also what other documents' links resolve to.
-3. Give the connection access to the page. In Notion, open the page, open its **⋯** menu, choose **Connections**, and add your connection. Without this the tool cannot see the page, and every command fails with a 404. You can do this only on pages you have full access to. If you selected the page on Notion's consent screen during sign-in, it is already done. Menu labels change from time to time, so look for **Connections** in the page's menu.
+3. Give the connection access to the page. In Notion, open the page, open its **⋯** menu, choose **Connections**, and add the connection (ask the owner for its name). Without this the tool cannot see the page, and every command fails with a 404. You can do this only on pages you have full access to. If you selected the page on Notion's consent screen during sign-in, it is already done. Menu labels change from time to time, so look for **Connections** in the page's menu.
 4. Start the body with a title heading (`#`), then the sections.
 
 Frontmatter fields the script reads: `published_url`, and `imported: true` for prose that is someone else's wording. The script never writes frontmatter. To track when you last synced, record it yourself.
@@ -396,7 +403,7 @@ Replace the paths and names. Claude will ask for the checkout location if you le
 **First-time setup**
 
 ```text
-Set up the Notion sync for me. The tool is in ~/dev/notion-sync. Check whether I am already signed in, and if not, walk me through the sign-in. I have created my own Notion connection (see docs/notion-connection-setup.md). I will type the client secret myself in my own terminal, so do not ask me for it here. When it works, run a read-only check against docs/my-document.md.
+Set up the Notion sync for me. The tool is in ~/dev/notion-sync. Check whether I am already signed in, and if not, walk me through the sign-in. The connection owner gives me my token: I approve their sign-in link, send them the address, and save the file they return (see the README's Set up section). I do not have the client secret, so do not ask me for it. When it works, run a read-only check against docs/my-document.md.
 ```
 
 **Sync a document**
@@ -481,9 +488,11 @@ Refusals begin with `REFUSING:`. Read the message and fix the document or the pa
 | You see | Do this |
 |---|---|
 | No such file `notion_token.json` | Run the [setup](#set-up) steps. |
-| Notion refuses the sign-in link | The redirect URI on your connection is not exactly `http://localhost`, or the client ID is wrong. |
-| `exchange` fails with an authentication error | The client secret does not belong to the client ID you used. Both must come from the same connection. |
-| `invalid_grant` on `exchange` | The code was used or expired. Run `url` and approve again. |
+| Notion refuses the sign-in link | The client ID is wrong, or the connection's redirect URI is not exactly `http://localhost`. Tell the owner. |
+| Notion will not let you approve | Tell the owner what the screen says. Whether a workspace guest can approve is not verified. |
+| `exchange` fails with an authentication error (owner) | The client secret does not belong to the client ID you used, or it was rotated. Both must come from the same connection. |
+| `invalid_grant` on `exchange` (owner) | The code was used or expired. The teammate approves again and sends a fresh address. |
+| Every command fails with an authorization error | The token was revoked, for example after the owner rotated the secret. Repeat steps 2 and 3. |
 | A 404 or `object_not_found` from the API | Most likely the connection was never added to the page. Add it under the page's **⋯** menu, **Connections** (see [Prepare a document](#prepare-a-document)), or run `url` again and select the page. |
 | `verify` fails on an unresolved link | The linked document has an empty `published_url`. Publish that page first, or remove the link. |
 | `verify` reports a manual section differs | Expected. The page owns it. Tell its owner what changed. |
@@ -496,10 +505,10 @@ Refusals begin with `REFUSING:`. Read the message and fix the document or the pa
 
 | Path | Purpose |
 |---|---|
-| `scripts/notion_auth.py` | One-time OAuth sign-in |
+| `scripts/notion_auth.py` | `url` prints the sign-in link; `exchange` (owner) turns an approval into a token |
 | `scripts/notion_publish.py` | Verify, plan and apply, comments |
 | `scripts/notion_sync.py` | Repair whitespace in code blocks |
 | `scripts/test_*.py` | Offline tests against an in-memory Notion |
-| `docs/notion-connection-setup.md` | Create your own Notion connection, store its secret, and sign in |
+| `docs/notion-connection-setup.md` | For the connection owner: create the connection, store its secret, hand out tokens |
 | `.claude/skills/notion-sync/` | Skill: operate the tool |
 | `.claude/skills/writing-for-notion/` | Skill: write documents and the publishing procedure |
